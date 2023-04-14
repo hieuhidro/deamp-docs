@@ -79,8 +79,8 @@ const config = {
             label: 'Usage',
           },
           {
-            to: '/change-log',
-            label: 'Change Log',
+            to: '/change-logs',
+            label: 'Change Logs',
           },
           {
             to: '/donate',
@@ -97,15 +97,6 @@ const config = {
       footer: {
         style: 'dark',
         links: [
-          {
-            title: 'Docs',
-            items: [
-              {
-                label: 'Getting Started',
-                to: '/getting-started',
-              },
-            ],
-          },
           {
             title: 'Community',
             items: [
