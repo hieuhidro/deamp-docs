@@ -1,0 +1,55 @@
+version: '3.3'
+
+x-mutagen:
+  sync:
+    defaults:
+      ignore:
+        paths:
+          - .deamp
+          - .idea
+          - .git
+          - .vscode
+          - .docker
+        vcs: true
+    code:
+      alpha: "./.."
+      beta: "volume://source_code"
+      mode: "two-way-resolved"
+      configurationBeta:
+        permissions:
+          defaultOwner: "id:1000"
+          defaultGroup: "id:1000"
+          defaultFileMode: 0o644
+          defaultDirectoryMode: 0o755
+
+services:
+  fpm:
+    volumes:
+      - &volume-source source_code:${SOURCE_ROOT:-/var/www/html}
+  fpm_xdebug:
+    volumes:
+      - *volume-source
+  cli:
+    volumes:
+      - *volume-source
+  cron:
+    volumes:
+      - *volume-source
+  node:
+    volumes:
+      - *volume-source
+  nginx:
+    volumes:
+      - *volume-source
+  apache:
+    volumes:
+      - *volume-source
+  nginx_varnish:
+    volumes:
+      - *volume-source
+  apache_varnish:
+    volumes:
+      - *volume-source
+
+volumes:
+  source_code:

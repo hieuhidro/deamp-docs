@@ -1,0 +1,14 @@
+version: '3.3'
+
+services:
+  node:
+    environment:
+      VIRTUAL_HOST: ${HOSTS}
+    expose:
+      - 3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(${HOSTS})
+    networks:
+      - net.autolbssl.deamp

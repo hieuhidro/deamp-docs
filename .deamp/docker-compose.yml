@@ -1,0 +1,126 @@
+version: '3.3'
+
+services:
+  fpm: &php
+    restart: unless-stopped
+    image: vinhphon/php:${PHP_VER:-8.2}-dev-fpm
+    working_dir: ${SOURCE_ROOT:-/var/www/html}
+    extra_hosts:
+      - 'host.docker.internal ${EXTRA_HOSTS:-}:host-gateway'
+    environment: &php-env
+      SENDMAIL_PATH: ${SENDMAIL_PATH:-/dev/null}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-4G}
+      PHP_EXTENSIONS: "${PHP_EXTENSIONS:-bcmath bz2 calendar exif gd gettext intl mysqli pcntl pdo_mysql soap sockets sysvmsg sysvsem sysvshm sodium opcache zip redis xsl}"
+      SOURCE_ROOT: ${SOURCE_ROOT:-/var/www/html}
+      UPLOAD_MAX_FILESIZE: ${UPLOAD_MAX_FILESIZE:-128M}
+      PHP_VALIDATE_TIMESTAMPS: ${PHP_VALIDATE_TIMESTAMPS:-1}
+    volumes: 
+      - &volume-source ./..:${SOURCE_ROOT:-/var/www/html}
+      - &volume-phpini ./php/php.ini:/usr/local/etc/php/conf.d/zzz-deamp.ini
+      - ./php/php-fpm.conf:/usr/local/etc/php-fpm.d/zzz-deamp.conf
+    networks:
+      - default
+      - net.services.deamp
+    
+  fpm_xdebug:
+    <<: *php
+    profiles: ["xdebug"]
+    extra_hosts:
+      - 'host.docker.internal ${EXTRA_HOSTS:-}:host-gateway'
+    environment:
+      <<: *php-env
+      PHP_EXTENSIONS: "${PHP_EXTENSIONS:-bcmath bz2 calendar exif gd gettext intl mysqli pcntl pdo_mysql soap sockets sysvmsg sysvsem sysvshm sodium opcache zip redis xsl} xdebug"
+      PHP_IDE_CONFIG: "serverName=${COMPOSE_PROJECT_NAME}"
+
+  cli: &php-cli
+    <<: *php
+    image: vinhphon/php:${PHP_VER:-8.2}-dev-cli
+    profiles: ["cli"]
+    restart: "no"
+    environment:
+      <<: *php-env
+      COMPOSER_VERSION: ${COMPOSER_VER:-}
+    volumes:
+      - *volume-source
+      - *volume-phpini
+      - ~/.composer:/var/www/composer:delegated
+
+  cron:
+    <<: *php-cli
+    restart: unless-stopped
+    profiles: ["cron"]
+    environment:
+      <<: *php-env
+      CRONTAB: ${CRONTAB:-* * * * * php -v}
+
+  node:
+    image: vinhphon/node-tools
+    profiles: ["node"]
+    restart: "no"
+    volumes:
+      - *volume-source
+
+  varnish: &web
+    image: 'varnish:${VARNISH_VER:-6.6}-alpine'
+    restart: unless-stopped
+    profiles: [ "nginx.varnish", "apache.varnish"]
+    environment: &web-env
+      VIRTUAL_HOST: ${HOSTS},${NGROK_URL}
+      BYPASS_DOMAINS: ${BYPASS_DOMAINS:-}
+    working_dir: ${SOURCE_ROOT:-/var/www/html}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(${HOSTS},`${NGROK_URL}`)
+    networks:
+      - default
+      - net.autolbssl.deamp
+    depends_on:
+      - fpm
+    volumes:
+      - ./varnish/default.vcl:/etc/varnish/default.vcl
+
+  nginx_varnish: &nginx
+    hostname: web
+    image: nginx:${NGINX_VER:-alpine}
+    profiles: ["nginx.varnish"]
+    environment:
+      <<: *web-env
+      SOURCE_ROOT: ${SOURCE_ROOT:-/var/www/html}
+      UPLOAD_MAX_FILESIZE: ${UPLOAD_MAX_FILESIZE:-128M}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-4G}
+    depends_on:
+      - varnish
+    volumes:
+      - *volume-source
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/vhost.conf:/etc/nginx/templates/default.conf.template:ro
+
+  apache_varnish: &apache
+    <<: *nginx
+    image: httpd:${APACHE_VER:-alpine}
+    profiles: ["apache.varnish"]
+    volumes:
+      - *volume-source
+      - ./apache/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+      - ./apache/vhost.conf:/usr/local/apache2/conf/extra/httpd-vhosts.conf:ro
+
+  nginx:
+    <<: [*nginx, *web]
+    hostname: "" #ignore varnish call web same network on another project
+    depends_on: 
+      - fpm
+    profiles: ["nginx"]
+
+  apache:
+    <<: [*apache, *web]
+    hostname: "" #ignore varnish call web same network on another project
+    depends_on:
+      - fpm
+    profiles: ["apache"]
+
+networks:
+  net.autolbssl.deamp:
+    external: true
+  net.services.deamp:
+    external: true
