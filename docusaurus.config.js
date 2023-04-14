@@ -6,20 +6,20 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: 'DEAMP',
+  tagline: 'Stack for local development',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-test-site.com',
+  url: 'https://docs.deamp.dev',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'vinhphon', // Usually your GitHub org/user name.
+  projectName: 'deamp-docs', // Usually your repo name.
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -43,7 +43,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/vinhphon/deamp-docs/tree/main/',
         },
         blog: false,
         theme: {
@@ -67,9 +67,25 @@ const config = {
         items: [
           {
             type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
-            position: 'left',
-            label: 'Tutorial',
+            sidebarId: 'mainSidebar',
+            label: 'Why DEAMP?',
+          },
+          {
+            to: '/installation',
+            label: 'Installation',
+          },
+          {
+            to: '/usage',
+            label: 'Usage',
+          },
+          {
+            to: '/change-log',
+            label: 'Change Log',
+          },
+          {
+            to: '/donate',
+            label: 'Donate',
+            position: 'right',
           },
           {
             href: 'https://github.com/vinhphon/deamp',
